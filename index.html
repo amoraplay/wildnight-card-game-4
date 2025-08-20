@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Wildnight Card Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap');
+    :root {
+      --pink:#ff477e; --orange:#ff914d; --violet:#7d5fff;
+    }
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: flex-start; height: 100vh; overflow: hidden;
+      color: #fff;
+      background: linear-gradient(270deg, var(--pink), var(--orange), var(--violet));
+      background-size: 600% 600%;
+      animation: gradientMove 20s ease infinite;
+      padding-top: 20px;
+    }
+    @keyframes gradientMove {
+      0%{background-position:0% 50%}
+      50%{background-position:100% 50%}
+      100%{background-position:0% 50%}
+    }
+    h1 {margin:10px 0 5px;font-size:28px;text-shadow:0 0 10px rgba(0,0,0,0.6)}
+    .subjudul {margin:0 0 10px;font-size:16px;font-weight:600}
+    .subjudul a {
+      text-decoration:none;
+      background-image:linear-gradient(90deg,#ff8fb1,#ffd166,#a78bfa);
+      background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+      filter:drop-shadow(0 0 8px rgba(255,71,126,0.35));animation:subjudulGlow 3s ease-in-out infinite alternate;
+    }
+    .subjudul a:hover {background-position:100% 0;text-decoration:underline}
+    @keyframes subjudulGlow {
+      0%{filter:drop-shadow(0 0 4px rgba(255,71,126,0.25))}
+      100%{filter:drop-shadow(0 0 14px rgba(167,139,250,0.55))}
+    }
+    .tagline {margin:-6px 0 20px;font-size:13px;opacity:.9}
+
+    .card-container{perspective:1000px}
+    .card{
+      width:320px; height:200px; border-radius:16px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.5);
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; padding:20px; text-align:center;
+      cursor:pointer; transition:transform .6s; transform-style:preserve-3d; position:relative;
+      background:#222;
+    }
+    .card.glow{animation:glowPulse 1s ease;box-shadow:0 0 25px var(--pink)}
+    @keyframes glowPulse{from{box-shadow:0 0 0 rgba(0,0,0,0.5)}to{box-shadow:0 0 25px var(--pink)}}
+    .card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;display:flex;
+      align-items:center;justify-content:center;border-radius:16px;padding:14px}
+    .card-front{background:#222;color:#fff}
+    .card-back{transform:rotateY(180deg)}
+    .card-back.action{background:var(--pink);color:#fff}
+    .card-back.dare{background:var(--orange);color:#fff}
+    .card-back.doublecouple{background:var(--violet);color:#fff}
+
+    /* Tombol umum */
+    button{
+      padding:12px 20px;font-size:16px;border:none;border-radius:10px;background:var(--pink);
+      color:white;cursor:pointer;transition:transform .2s,background .3s
+    }
+    button:hover{transform:scale(1.1);background:#ff265e}
+
+    /* Tombol Ambil Kartu (utama) */
+    #mainControl {margin-top: 20px; display: flex; justify-content: center;}
+    #mainControl button {background: #ff265e; font-size: 18px; padding: 14px 28px; border-radius: 12px; font-weight: bold;}
+    #mainControl button:hover {background: #e31b54; transform: scale(1.12);}
+
+    /* Tombol lain */
+    #controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:15px}
+
+    #cardCounter{margin-top:10px;font-size:14px;background:rgba(0,0,0,0.4);padding:6px 12px;border-radius:8px}
+    #history{
+      margin-top:20px;max-width:340px;background:rgba(0,0,0,0.35);padding:10px;border-radius:12px;
+      font-size:14px;max-height:150px;overflow-y:auto
+    }
+    #history h3{margin:0 0 8px;font-size:16px;text-align:center}
+    #history ul{padding-left:20px;margin:0}
+    #history li{margin-bottom:6px}
+    #clearHistoryBtn{
+      display:block;margin:10px auto 0;padding:8px 14px;font-size:14px;border:none;border-radius:8px;
+      background:var(--orange);color:#fff;cursor:pointer
+    }
+    #clearHistoryBtn:hover{background:#ff7300}
+
+    /* Popup instruksi */
+    #instructionPopup{
+      position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);
+      display:flex;align-items:center;justify-content:center;z-index:999
+    }
+    #instructionContent{background:#222;padding:20px;border-radius:12px;max-width:400px;text-align:center}
+    .mutedHint{font-size:12px;opacity:.8;margin-top:6px}
+  </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff477e">
+</head>
+<body>
+  <h1>🔥 Wildnight Card 🔥</h1>
+  <h2 class="subjudul">🎴 <a href="https://amoraplay.id" target="_blank" rel="noopener">Card Game Tomy</a></h2>
+  <p class="tagline">iseng-iseng</p>
+
+  <!-- Popup instruksi -->
+  <div id="instructionPopup">
+    <div id="instructionContent">
+      <h2>🎴 Cara Main Wildnight</h2>
+      <ol style="text-align:left;font-size:14px">
+        <li>Ambil kartu bergantian.</li>
+        <li>Baca & lakukan instruksi.</li>
+        <li>Menolak? Jalani hukuman.</li>
+        <li>Kartu dengan label DoubleCouple dilakukan bersama.</li>
+        <li>Permainan boleh berhenti kapan saja 😏</li>
+      </ol>
+      <button onclick="closePopup()">Mulai Main 🚀</button>
+      <div class="mutedHint">Tips: Klik layar sekali agar musik romantis menyala 🎶</div>
+    </div>
+  </div>
+
+  <!-- Kartu -->
+  <div class="card-container">
+    <div class="card" id="card" title="Klik untuk ambil kartu">
+      <div class="card-face card-front">Klik untuk ambil kartu 🎴</div>
+      <div class="card-face card-back action" id="cardBack">...</div>
+    </div>
+  </div>
+
+  <!-- Tombol utama -->
+  <div id="mainControl">
+    <button id="drawBtn" onclick="drawCard('all')">🎴 Ambil Kartu</button>
+  </div>
+
+  <!-- Tombol lain -->
+  <div id="controls">
+    <button onclick="drawCard('action')">Action Only</button>
+    <button onclick="drawCard('dare')">Dare Only</button>
+    <button onclick="drawCard('doublecouple')">DoubleCouple Only</button>
+    <button onclick="toggleMute()" id="muteBtn">🔈 Unmute</button>
+    <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
+  </div>
+
+  <div id="cardCounter">Sisa Kartu: 0</div>
+  <div id="history">
+    <h3>History Kartu</h3>
+    <ul id="historyList"></ul>
+    <button id="clearHistoryBtn" onclick="clearHistory()">Hapus History</button>
+  </div>
+
+  <!-- Musik -->
+  <audio id="bgMusic" loop autoplay muted playsinline>
+    <!-- Romantis instrumental (bebas lisensi) -->
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/09/audio_0e5b3c3a0f.mp3?filename=romantic-10669.mp3" type="audio/mpeg" />
+  </audio>
+  <audio id="flipSoundAction">
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6a2e00f6e2.mp3?filename=card-flip-1-100718.mp3" type="audio/mpeg" />
+  </audio>
+  <audio id="flipSoundDare">
+    <source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_4b18d9b8b1.mp3?filename=drum-roll-1-11064.mp3" type="audio/mpeg" />
+  </audio>
+
+  <script>
+    // === Isi Kartu (terbaru) ===
+    const actionCards = [
+      "Cium pasanganmu di area leher selama 20 detik.<br>👉 Hukuman: Lepas 1 pakaian.",
+      "Lakukan strip tease singkat, buka 1 pakaian.<br>👉 Hukuman: Pasangan boleh pilih bagian tubuhmu untuk dicium.",
+      "Jilat bibir pasanganmu perlahan.<br>👉 Hukuman: Cium kaki pasangan.",
+      "Pijat paha pasangan selama 1 menit.<br>👉 Hukuman: Duduk di lantai selama 1 ronde.",
+      "Berikan love bite di leher atau pundak.<br>👉 Hukuman: Lepas 2 pakaian sekaligus.",
+      "Berikan ciuman panjang minimal 15 detik.<br>👉 Hukuman: Cium pipi pasangan 10 kali berturut-turut.",
+      "Dekap pasangan erat tanpa bicara 30 detik.<br>👉 Hukuman: Penuhi permintaan pasangan 1x.",
+      "Lepas satu pakaianmu dengan gaya dramatis.<br>👉 Hukuman: Pasangan boleh meraba punggungmu 15 detik.",
+      "Berikan french kiss seintens mungkin.<br>👉 Hukuman: Biarkan pasangan duduk di pangkuanmu 30 detik.",
+      "Duduk menghadap pasangan, tempelkan kening 20 detik.<br>👉 Hukuman: Tahan kontak mata 30 detik tanpa senyum.",
+      "Elus wajah pasanganmu dengan lembut sambil menatap matanya.<br>👉 Hukuman: Pasangan boleh berikan cubitan manja.",
+      "Usap rambut pasangan sambil mengecup keningnya.<br>👉 Hukuman: Biarkan pasangan mencubit bibirmu pelan.",
+      "Baringkan pasanganmu dan peluk dari samping selama 30 detik.<br>👉 Hukuman: Lepas 1 pakaian.",
+      "Gigit pelan bibir bawah pasangan.<br>👉 Hukuman: Pasangan boleh menggoda telingamu.",
+      "Tempelkan bibirmu ke telinga pasangan dan hembuskan napas pelan.<br>👉 Hukuman: Desah pelan 10 detik.",
+      "Sentuh punggung pasangan dengan usapan lembut.<br>👉 Hukuman: Biarkan pasangan mencium lehermu.",
+      "Bisikkan “aku mau kamu” di telinga pasangan.<br>👉 Hukuman: Katakan kalimat nakal pilihan pasangan.",
+      "Cium tangan pasangan dengan penuh sensualitas.<br>👉 Hukuman: Pasangan boleh mencium kakimu.",
+      "Genggam pinggang pasangan sambil menariknya mendekat.<br>👉 Hukuman: Lepas 1 pakaian.",
+      "Tatap bibir pasangan 10 detik sebelum menciumnya.<br>👉 Hukuman: Pasangan boleh pilih 1 area tubuhmu untuk dicium."
+    ];
+
+    const dareCards = [
+      "Dirty talk selama 1 menit.<br>👉 Hukuman: Lepas 1 pakaian.",
+      "Bisikkan 3 fantasi terliarmu ke telinga pasangan.<br>👉 Hukuman: Katakan “Aku milikmu” 3x.",
+      "Katakan kalimat paling nakal yang kamu pikirkan.<br>👉 Hukuman: Pasangan boleh cubit bokongmu.",
+      "Berikan pasangan lap dance singkat.<br>👉 Hukuman: Lepas 2 pakaian.",
+      "Lakukan kontak mata 30 detik tanpa senyum.<br>👉 Hukuman: Pasangan boleh mencium lehermu.",
+      "Tiru suara orgasme selama 10 detik.<br>👉 Hukuman: Pasangan boleh meraba pinggangmu 15 detik.",
+      "Deskripsikan bagian tubuh pasangan yang paling kamu suka.<br>👉 Hukuman: Cium tangan pasangan 10 kali.",
+      "Ucapkan 3 hal nakal yang ingin kamu coba bersama pasangan.<br>👉 Hukuman: Lepas 1 pakaian.",
+      "Biarkan pasangan memberi “perintah” apa saja selama 1 menit.<br>👉 Hukuman: Tambah 1 pakaian dilepas.",
+      "Pegang tangan pasangan, lalu arahkan ke area tubuhmu.<br>👉 Hukuman: Biarkan pasangan yang mengarahkan tanganmu ke tubuhnya.",
+      "Ceritakan pengalaman paling nakal yang pernah kamu lakukan.<br>👉 Hukuman: Katakan “Aku horny” 3x dengan suara menggoda.",
+      "Ucapkan “Aku milikmu” dengan nada menggoda.<br>👉 Hukuman: Lepas 1 pakaian.",
+      "Biarkan pasangan memilih pakaianmu yang harus dilepas.<br>👉 Hukuman: Pasangan boleh pilih hukuman baru untukmu.",
+      "Buat suara “cium basah” di telinga pasangan.<br>👉 Hukuman: Cium pipi pasangan 10 kali.",
+      "Ucapkan sesuatu dengan nada paling sensual yang bisa kamu lakukan.<br>👉 Hukuman: Pasangan boleh cium bibirmu 10 detik.",
+      "Biarkan pasangan duduk di pangkuanmu 30 detik.<br>👉 Hukuman: Kamu yang duduk di pangkuannya.",
+      "Tanyakan ke pasangan: “Bagian tubuhku mana yang ingin kamu sentuh sekarang?”<br>👉 Hukuman: Pasangan boleh benar-benar menyentuhnya.",
+      "Lakukan gerakan tubuh seperti menari sensual.<br>👉 Hukuman: Lepas 1 pakaian.",
+      "Katakan satu rahasia nakal yang belum pernah kamu ceritakan.<br>👉 Hukuman: Pasangan boleh pilih 1 fantasi untuk kamu lakukan nanti.",
+      "Biarkan pasangan mencium area tubuhmu yang dia pilih.<br>👉 Hukuman: Lepas 2 pakaian."
+    ];
+
+    const doubleCoupleCards = [
+      "Saling lepas satu pakaian bergantian.",
+      "Saling berikan french kiss 30 detik nonstop.",
+      "Saling jilat bibir pasangan.",
+      "Saling cium 3 area tubuh pilihan masing-masing..",
+      "Saling bisikkan dirty talk pendek.",
+      "Saling tatap mata sambil berciuman.",
+      "Saling pegang area sensitif bergantian",
+      "Saling berikan love bite di tempat tersembunyi",
+      "Pegang tangan pasangan, lalu arahkan ke area tubuhmu."
+    ];
+
+    // === Elemen & Variabel ===
+    const card = document.getElementById("card");
+    const cardBack = document.getElementById("cardBack");
+    const historyList = document.getElementById("historyList");
+    const cardCounter = document.getElementById("cardCounter");
+    const muteBtn = document.getElementById("muteBtn");
+    const bgMusic = document.getElementById("bgMusic");
+    const flipSoundAction = document.getElementById("flipSoundAction");
+    const flipSoundDare = document.getElementById("flipSoundDare");
+
+    // === Musik: Autoplay fix ===
+    let hasInteracted = false;
+    function ensureMusicPlays() {
+      if (!hasInteracted) {
+        hasInteracted = true;
+        bgMusic.pause();
+        bgMusic.currentTime = 0;
+        bgMusic.muted = false;
+        bgMusic.play().then(() => {
+          bgMusic.volume = 0.5; // volume nyaman
+          console.log("🎶 Musik romantis dimulai");
+          muteBtn.innerText = "🔊 Mute";
+        }).catch(err => console.log("⚠️ Autoplay blocked:", err));
+      }
+    }
+    document.addEventListener("click", ensureMusicPlays, { once:false });
+    document.addEventListener("keydown", ensureMusicPlays, { once:false });
+
+    // === Deck logic ===
+    let deck = [];
+    let currentMode = "all";
+
+    function shuffle(array){
+      for(let i=array.length-1;i>0;i--){
+        const j=Math.floor(Math.random()*(i+1));
+        [array[i],array[j]]=[array[j],array[i]];
+      }
+      return array;
+    }
+
+    function initDeck(type="all"){
+      currentMode = type;
+      if(type==="action") deck=[...actionCards];
+      else if(type==="dare") deck=[...dareCards];
+      else if(type==="doublecouple") deck=[...doubleCoupleCards];
+      else deck=[...actionCards, ...dareCards, ...doubleCoupleCards];
+      shuffle(deck);
+      updateCardCounter();
+    }
+
+    function drawCard(type="all"){
+      // ganti mode = reset deck
+      if(type!==currentMode){ initDeck(type); }
+
+      if(deck.length===0){ showDeckEmptyPopup(); return; }
+
+      // animasi flip ulang
+      card.style.transform = "rotateY(0deg)";
+      setTimeout(()=>{ card.style.transform = "rotateY(180deg)"; }, 10);
+
+      const cardText = deck.pop();
+      card.classList.add("glow");
+
+      // deteksi kategori
+      let category = "action";
+      if (dareCards.includes(cardText)) category = "dare";
+      else if (doubleCoupleCards.includes(cardText)) category = "doublecouple";
+
+      // gaya belakang kartu
+      cardBack.className = "card-face card-back " + category;
+      cardBack.innerHTML = cardText;
+
+      // sfx
+      try {
+        if(category==='action') flipSoundAction.play();
+        else flipSoundDare.play();
+      } catch(e){}
+
+      addToHistory(cardText, category);
+      updateCardCounter();
+    }
+
+    function addToHistory(text, category){
+      const li = document.createElement("li");
+      li.innerHTML = `[${category.toUpperCase()}] ` + text;
+      historyList.insertBefore(li, historyList.firstChild);
+      while(historyList.childElementCount > 12){
+        historyList.removeChild(historyList.lastChild);
+      }
+    }
+
+    function clearHistory(){ historyList.innerHTML = ""; }
+
+    function toggleMute(){
+      bgMusic.muted = !bgMusic.muted;
+      muteBtn.innerText = bgMusic.muted ? "🔈 Unmute" : "🔊 Mute";
+      // jika unmute tapi belum pernah play (iOS/Chrome), paksa play setelah interaksi
+      if(!bgMusic.muted && !hasInteracted){
+        ensureMusicPlays();
+      }
+    }
+
+    function toggleFullscreen(){
+      if(!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+
+    function closePopup(){ document.getElementById("instructionPopup").style.display = "none"; }
+
+    // Popup Kartu Habis
+    function showDeckEmptyPopup(){
+      let popup = document.getElementById("deckEmptyPopup");
+      if(popup) return;
+      popup = document.createElement("div");
+      popup.id = "deckEmptyPopup";
+      popup.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:1000";
+      const content = document.createElement("div");
+      content.style.cssText = "background:#222;color:#fff;padding:20px;border-radius:12px;text-align:center;max-width:360px";
+      content.innerHTML = `
+        <h2>🎴 Kartu Habis 🎴</h2>
+        <p>Semua kartu sudah dimainkan!</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:10px">
+          <button onclick="restartDeck()">Mulai Ulang</button>
+          <button onclick="closeDeckPopup()">Tutup</button>
+        </div>
+      `;
+      popup.appendChild(content);
+      document.body.appendChild(popup);
+    }
+    function closeDeckPopup(){
+      const p = document.getElementById("deckEmptyPopup");
+      if(p) p.remove();
+    }
+    function restartDeck(){
+      closeDeckPopup();
+      initDeck(currentMode);
+    }
+
+    function updateCardCounter(){ cardCounter.textContent = "Sisa Kartu: " + deck.length; }
+
+    // Event: hapus efek glow selesai animasi
+    card.addEventListener('animationend', (e)=>{
+      if(e.animationName==='glowPulse') e.target.classList.remove('glow')
+    });
+    // Klik kartu juga untuk draw (mengikuti mode aktif)
+    card.addEventListener('click', ()=> drawCard(currentMode));
+
+    // Init
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initDeck("all");
+      // sinkron label mute
+      muteBtn.innerText = bgMusic.muted ? "🔈 Unmute" : "🔊 Mute";
+    });
+  </script>
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+</body>
+</html>
